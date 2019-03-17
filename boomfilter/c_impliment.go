@@ -44,6 +44,10 @@ RedisModuleString *createStringFromLongLong(RedisModuleCtx *ctx, long long ll) {
 	return RedisModule_CreateStringFromLongLong(ctx, ll);
 }
 
+void freeModuleString(RedisModuleCtx *ctx, RedisModuleString *str) {
+	return RedisModule_FreeString(ctx, str);
+}
+
 void closeKey(RedisModuleKey *kp) {
 	RedisModule_CloseKey(kp);
 }
@@ -95,6 +99,10 @@ int getReplyType(RedisModuleCallReply *reply) {
 
 long long getIntegerFromReply(RedisModuleCallReply *reply) {
 	return RedisModule_CallReplyInteger(reply);
+}
+
+void freeReply(RedisModuleCallReply *reply) {
+	return RedisModule_FreeCallReply(reply);
 }
 
 extern int boomfilterCreate(RedisModuleCtx *ctx, RedisModuleString  **argv, int argc);

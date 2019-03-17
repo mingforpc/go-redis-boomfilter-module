@@ -23,6 +23,8 @@ int stringToLongLong(const RedisModuleString *str, long long *ll);
 RedisModuleString *createString(RedisModuleCtx *ctx, const char *ptr, size_t len);
 // long long 转为RedisModuleString
 RedisModuleString *createStringFromLongLong(RedisModuleCtx *ctx, long long ll);
+// 释放 RedisModuleString
+void freeModuleString(RedisModuleCtx *ctx, RedisModuleString *str);
 
 // 打开一个RedisModuleKey结构
 RedisModuleKey *openKey(RedisModuleCtx *ctx, RedisModuleString *keyname, int mode);
@@ -53,6 +55,8 @@ RedisModuleCallReply *getBit(RedisModuleCtx *ctx, char *key, char *offset);
 int getReplyType(RedisModuleCallReply *reply);
 // 从 Reply 中获取整型结果
 long long getIntegerFromReply(RedisModuleCallReply *reply);
+// 释放 RedisModuleCallReply
+void freeReply(RedisModuleCallReply *reply);
 
 */
 import (
@@ -161,9 +165,14 @@ func boomfilterCreate(ctx *C.RedisModuleCtx, argv **C.RedisModuleString, argc C.
 		if seek > 0 && hashSeekSet[seek] == 0 {
 			hashSeekSet[seek] = seek
 			seekStr := C.createStringFromLongLong(ctx, C.longlong(seek))
+
 			ghashCount--
 			// 存入hash字典中，key: index, value: hash seek
-			C.hashSet(hashSeekListKey, C.REDISMODULE_HASH_NONE, C.createStringFromLongLong(ctx, C.longlong(ghashCount)), seekStr)
+			hsahCountStr := C.createStringFromLongLong(ctx, C.longlong(ghashCount))
+			C.hashSet(hashSeekListKey, C.REDISMODULE_HASH_NONE, hsahCountStr, seekStr)
+
+			C.freeModuleString(ctx, seekStr)
+			C.freeModuleString(ctx, hsahCountStr)
 		}
 	}
 
@@ -291,6 +300,7 @@ func boomfilterAdd(ctx *C.RedisModuleCtx, argv **C.RedisModuleString, argc C.int
 		seek := int64(cSeek)
 		seekList = append(seekList, seek)
 
+		C.freeModuleString(ctx, seekHkey)
 	}
 
 	// 处理多个添加的val
@@ -310,6 +320,8 @@ func boomfilterAdd(ctx *C.RedisModuleCtx, argv **C.RedisModuleString, argc C.int
 				C.replyWithError(ctx, C.CString("ERR set bit"))
 				return C.REDISMODULE_ERR
 			}
+
+			C.freeReply(callReply)
 		}
 
 	}
@@ -395,6 +407,7 @@ func boomfilterExists(ctx *C.RedisModuleCtx, argv **C.RedisModuleString, argc C.
 		seek := int64(cSeek)
 		seekList = append(seekList, seek)
 
+		C.freeModuleString(ctx, seekHkey)
 	}
 
 	val := C.getArgvString(argv, C.int(2))
@@ -421,6 +434,8 @@ func boomfilterExists(ctx *C.RedisModuleCtx, argv **C.RedisModuleString, argc C.
 			return C.REDISMODULE_OK
 		}
 
+		C.freeReply(callReply)
+
 	}
 
 	// val 存在
@@ -431,6 +446,7 @@ func boomfilterExists(ctx *C.RedisModuleCtx, argv **C.RedisModuleString, argc C.
 
 func getRedisKey(ctx *C.RedisModuleCtx, keystr string, openmode C.int) *C.RedisModuleKey {
 	redisKeyStr := C.createString(ctx, C.CString(keystr), C.size_t(len(keystr)))
+	defer C.freeModuleString(ctx, redisKeyStr)
 	key := C.openKey(ctx, redisKeyStr, openmode)
 
 	return key

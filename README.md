@@ -5,6 +5,7 @@
 一个使用CGO实现的Redis布隆过滤器module.
 
 PS: `redismodule.h`基于Redis 4.0
+PPS: 不能用于Redis集群，因为使用了`RedisModule_Call`
 
 ## 编译命令
 
