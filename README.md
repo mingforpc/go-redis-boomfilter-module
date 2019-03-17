@@ -11,7 +11,7 @@ PPS: 不能用于Redis集群，因为使用了`RedisModule_Call`
 
 `go build -buildmode=c-shared -o boomfilter.so  ./boomfilter`
 
-##　使用
+## 使用
 
 ### 加载
 
